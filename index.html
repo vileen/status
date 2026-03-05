@@ -328,8 +328,14 @@
 
         // Authenticate user
         function authenticate() {
-            const password = document.getElementById('passwordInput').value.trim();
+            const passwordInput = document.getElementById('passwordInput');
+            const password = passwordInput.value.trim();
             const errorDiv = document.getElementById('authError');
+            
+            // Debug logging
+            console.log('Entered password:', password);
+            console.log('Expected password:', CONFIG.PASSWORD);
+            console.log('Match:', password === CONFIG.PASSWORD);
 
             if (password === CONFIG.PASSWORD) {
                 sessionStorage.setItem('status_password', password);
@@ -338,9 +344,9 @@
                 errorDiv.classList.add('hidden');
                 initDashboard();
             } else {
-                errorDiv.textContent = 'Invalid password';
+                errorDiv.textContent = 'Invalid password (entered: ' + password.length + ' chars)';
                 errorDiv.classList.remove('hidden');
-                document.getElementById('passwordInput').value = '';
+                passwordInput.value = '';
             }
         }
 
