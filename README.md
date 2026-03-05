@@ -1,68 +1,45 @@
 # Status Dashboard
 
-Real-time monitoring dashboard for all your applications.
+Simple status page for backend services.
 
 ## Features
 
-- 🔍 Automatic service health checks every 60 seconds
-- 📊 Network latency monitoring
-- 🔒 Secure remote access with token-based authentication
-- 🏠 Local network auto-detection (no auth needed)
-- 📱 Mobile-friendly responsive design
+- ✅ Simple password protection (12 chars)
+- 🔍 Automatic health checks every 60 seconds
+- 📱 Mobile-friendly design
 - 📡 GitHub Pages hosted
 
-## Security Model
+## Password
 
-**IMPORTANT: MAC address whitelist is NOT possible for web applications**
+Default password: `status2024dash`
 
-Browsers (Chrome, Safari, Firefox) do not expose device MAC addresses to websites for security and privacy reasons. This is a fundamental web security limitation.
-
-### Alternative security approach:
-
-1. **Local Network** (192.168.x.x, 10.x.x.x): Full access, no authentication
-2. **Remote Access**: Token-based authentication via localStorage
-3. **Device Registration**: Manual token entry on first visit
-
-## Setup
-
-1. Copy config template:
-```bash
-cp config.example.js config.js
+**To change password:** Edit `index.html` line 14:
+```javascript
+PASSWORD: 'your-new-password'
 ```
-
-2. Edit `config.js` and set your `REMOTE_ACCESS_TOKEN`
-
-3. Deploy to GitHub Pages:
-```bash
-git add .
-git commit -m "Initial setup"
-git push
-```
-
-## Usage
-
-### Local Network
-Just open the page - full dashboard appears automatically.
-
-### Remote Access
-1. Open the GitHub Pages URL
-2. Enter your secret token when prompted
-3. Dashboard loads with full access
 
 ## Services Monitored
 
-- Speech Practice Backend (speech.vileen.pl)
-- Solana Playground Backend (solana.vileen.pl)
-- Speech Practice Frontend (GitHub Pages)
-- Mic Testing (Netlify)
+- Speech Practice API (speech.vileen.pl)
+- Solana Playground API (solana.vileen.pl)
 
-## Adding New Services
+## Adding Services
 
-Edit `config.js` and add to `SERVICES` array:
+Edit `index.html` and add to `CONFIG.SERVICES`:
 ```javascript
 {
-  name: 'My Service',
-  url: 'https://my-service.com/health',
-  type: 'api' // or 'web'
+    name: 'My API',
+    url: 'https://my-api.com/health',
+    type: 'api'
 }
 ```
+
+## Deploy
+
+```bash
+git add .
+git commit -m "Update"
+git push
+```
+
+GitHub Actions will auto-deploy to Pages.

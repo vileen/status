@@ -44,25 +44,6 @@
             font-size: 0.9rem;
         }
         
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        
-        .status-badge.online {
-            background: rgba(78, 204, 163, 0.2);
-            color: #4ecca3;
-        }
-        
-        .status-badge.offline {
-            background: rgba(233, 69, 96, 0.2);
-            color: #e94560;
-        }
-        
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -158,45 +139,13 @@
             color: #e94560;
         }
         
-        .network-card {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        }
-        
-        .ping-chart {
-            height: 100px;
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            margin-top: 15px;
-            padding: 10px;
-            background: #0f0f1a;
-            border-radius: 8px;
-        }
-        
-        .ping-bar {
-            flex: 1;
-            background: #4ecca3;
-            border-radius: 2px 2px 0 0;
-            min-height: 2px;
-            transition: height 0.3s;
-        }
-        
-        .ping-bar.high {
-            background: #ffd700;
-        }
-        
-        .ping-bar.critical {
-            background: #e94560;
-        }
-        
         .auth-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(15, 15, 26, 0.95);
+            background: rgba(15, 15, 26, 0.98);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -215,7 +164,7 @@
         
         .auth-box h2 {
             color: #7289da;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         
         .auth-box p {
@@ -233,6 +182,8 @@
             color: #fff;
             font-size: 1rem;
             margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 2px;
         }
         
         .auth-box input:focus {
@@ -308,50 +259,25 @@
     </style>
 </head>
 <body>
-    <!-- Auth Overlay -->
+    <!-- Password Overlay -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-box">
             <h2>🔒 Status Dashboard</h2>
-            <p id="authMessage">Enter access token to view dashboard</p>
-            <input type="password" id="tokenInput" placeholder="Enter token...">
-            <button onclick="authenticate()">Access Dashboard</button>
+            <p>Enter password to access</p>
+            <input type="password" id="passwordInput" placeholder="••••••••••••" maxlength="12">
+            <button onclick="authenticate()">Access</button>
             <div id="authError" class="error-message hidden"></div>
         </div>
     </div>
 
     <div class="container">
         <header>
-            <h1>📊 System Status</h1>
+            <h1>📊 Backend Status</h1>
             <div class="subtitle">Real-time service monitoring</div>
-            <div id="connectionBadge" class="status-badge online">Connected</div>
         </header>
 
-        <div class="grid">
-            <!-- Network Status Card -->
-            <div class="card network-card">
-                <div class="card-header">
-                    <span class="card-title">🌐 Network Status</span>
-                    <div id="networkStatus" class="status-dot online"></div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Current Ping</span>
-                    <span id="currentPing" class="metric-value good">-- ms</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Average Ping (1 min)</span>
-                    <span id="avgPing" class="metric-value">-- ms</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Packet Loss</span>
-                    <span id="packetLoss" class="metric-value good">0%</span>
-                </div>
-                <div class="ping-chart" id="pingChart">
-                    <!-- Ping bars will be inserted here -->
-                </div>
-            </div>
-
-            <!-- Service Cards will be inserted here -->
-            <div id="servicesGrid"></div>
+        <div class="grid" id="servicesGrid">
+            <!-- Service cards will be inserted here -->
         </div>
 
         <footer>
@@ -362,47 +288,38 @@
 
     <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()" title="Refresh now">🔄</button>
 
-    <!-- Load config first -->
-    <script src="config.js"></script>
     <script>
-        // Fallback config if config.js is not loaded
-        if (typeof CONFIG === 'undefined') {
-            var CONFIG = {
-                SERVICES: [],
-                REMOTE_ACCESS_TOKEN: 'demo',
-                LOCAL_NETWORK_RANGES: ['192.168.', '10.', '127.', '::1'],
-                PING_INTERVAL: 60000
-            };
-        }
+        // CONFIGURATION - Edit these values
+        const CONFIG = {
+            // 12-character password
+            PASSWORD: 'status2024dash',
+            
+            // Backend services only
+            SERVICES: [
+                {
+                    name: 'Speech Practice API',
+                    url: 'https://speech.vileen.pl/api/health',
+                    type: 'api'
+                },
+                {
+                    name: 'Solana Playground API', 
+                    url: 'https://solana.vileen.pl/api/health',
+                    type: 'api'
+                }
+            ],
+            
+            // Ping interval (60 seconds)
+            PING_INTERVAL: 60000
+        };
 
         // State
-        let pingHistory = [];
         let isAuthenticated = false;
         let autoRefreshInterval = null;
 
-        // Check if running on local network
-        function isLocalNetwork() {
-            const hostname = window.location.hostname;
-            return CONFIG.LOCAL_NETWORK_RANGES.some(range => 
-                hostname.startsWith(range) || hostname === 'localhost'
-            );
-        }
-
         // Check authentication
         function checkAuth() {
-            // If local network, auto-authenticate
-            if (isLocalNetwork()) {
-                isAuthenticated = true;
-                document.getElementById('authOverlay').classList.add('hidden');
-                document.getElementById('authMessage').textContent = 
-                    'Local network detected - full access granted';
-                initDashboard();
-                return;
-            }
-
-            // Check for saved token
-            const savedToken = localStorage.getItem('status_dashboard_token');
-            if (savedToken && savedToken === CONFIG.REMOTE_ACCESS_TOKEN) {
+            const savedPassword = sessionStorage.getItem('status_password');
+            if (savedPassword === CONFIG.PASSWORD) {
                 isAuthenticated = true;
                 document.getElementById('authOverlay').classList.add('hidden');
                 initDashboard();
@@ -411,18 +328,19 @@
 
         // Authenticate user
         function authenticate() {
-            const token = document.getElementById('tokenInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
             const errorDiv = document.getElementById('authError');
 
-            if (token === CONFIG.REMOTE_ACCESS_TOKEN) {
-                localStorage.setItem('status_dashboard_token', token);
+            if (password === CONFIG.PASSWORD) {
+                sessionStorage.setItem('status_password', password);
                 isAuthenticated = true;
                 document.getElementById('authOverlay').classList.add('hidden');
                 errorDiv.classList.add('hidden');
                 initDashboard();
             } else {
-                errorDiv.textContent = 'Invalid token. Please try again.';
+                errorDiv.textContent = 'Invalid password';
                 errorDiv.classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
             }
         }
 
@@ -459,10 +377,6 @@
                         <span class="metric-label">Last Check</span>
                         <span class="metric-value" id="lastcheck-${index}">--</span>
                     </div>
-                    <div class="metric">
-                        <span class="metric-label">URL</span>
-                        <span class="metric-value" style="font-size: 0.75rem; word-break: break-all;">${service.url}</span>
-                    </div>
                 `;
                 grid.appendChild(card);
             });
@@ -472,50 +386,19 @@
         async function pingService(service) {
             const start = performance.now();
             try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 10000);
-
-                const response = await fetch(service.url, {
-                    method: 'HEAD',
-                    mode: 'no-cors',
-                    signal: controller.signal,
-                    cache: 'no-cache'
+                const response = await fetch(service.url + '?t=' + Date.now(), {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
                 });
-
-                clearTimeout(timeout);
                 const latency = Math.round(performance.now() - start);
-                
                 return {
-                    online: true,
+                    online: response.ok,
                     latency: latency,
                     timestamp: new Date()
                 };
             } catch (error) {
-                // Try with a different approach for APIs
-                if (service.type === 'api') {
-                    try {
-                        const response = await fetch(service.url + '?t=' + Date.now(), {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                            }
-                        });
-                        const latency = Math.round(performance.now() - start);
-                        return {
-                            online: response.ok,
-                            latency: latency,
-                            timestamp: new Date()
-                        };
-                    } catch (e) {
-                        return {
-                            online: false,
-                            latency: null,
-                            timestamp: new Date(),
-                            error: error.message
-                        };
-                    }
-                }
-                
                 return {
                     online: false,
                     latency: null,
@@ -525,68 +408,11 @@
             }
         }
 
-        // Check network ping
-        async function checkNetworkPing() {
-            const start = performance.now();
-            try {
-                await fetch('https://www.google.com/favicon.ico', {
-                    mode: 'no-cors',
-                    cache: 'no-cache'
-                });
-                const latency = Math.round(performance.now() - start);
-                updatePingChart(latency);
-                return latency;
-            } catch (e) {
-                updatePingChart(null);
-                return null;
-            }
-        }
-
-        // Update ping chart
-        function updatePingChart(ping) {
-            if (ping !== null) {
-                pingHistory.push(ping);
-                if (pingHistory.length > 50) pingHistory.shift();
-            }
-
-            const chart = document.getElementById('pingChart');
-            chart.innerHTML = '';
-
-            pingHistory.forEach(p => {
-                const bar = document.createElement('div');
-                bar.className = 'ping-bar';
-                if (p > 100) bar.classList.add('high');
-                if (p > 300) bar.classList.add('critical');
-                
-                const height = Math.min((p / 300) * 100, 100);
-                bar.style.height = height + '%';
-                chart.appendChild(bar);
-            });
-
-            // Update metrics
-            if (pingHistory.length > 0) {
-                const last = pingHistory[pingHistory.length - 1];
-                const avg = Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length);
-                
-                const currentPingEl = document.getElementById('currentPing');
-                currentPingEl.textContent = last + ' ms';
-                currentPingEl.className = 'metric-value ' + (last < 50 ? 'good' : last < 150 ? 'warning' : 'bad');
-                
-                const avgPingEl = document.getElementById('avgPing');
-                avgPingEl.textContent = avg + ' ms';
-                avgPingEl.className = 'metric-value ' + (avg < 50 ? 'good' : avg < 150 ? 'warning' : 'bad');
-            }
-        }
-
         // Check all services
         async function checkAllServices() {
             const btn = document.getElementById('refreshBtn');
             btn.classList.add('spinning');
 
-            // Check network first
-            await checkNetworkPing();
-
-            // Check each service
             CONFIG.SERVICES.forEach(async (service, index) => {
                 const status = await pingService(service);
                 updateServiceCard(index, status);
@@ -606,7 +432,7 @@
 
             if (status.online) {
                 dot.className = 'status-dot online';
-                statusText.textContent = 'Operational';
+                statusText.textContent = 'Online';
                 statusText.className = 'metric-value good';
                 responseEl.textContent = status.latency + ' ms';
                 responseEl.className = 'metric-value good';
@@ -632,15 +458,15 @@
             checkAllServices();
         }
 
-        // Handle Enter key in auth input
-        document.getElementById('tokenInput').addEventListener('keypress', function(e) {
+        // Handle Enter key
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') authenticate();
         });
 
         // Initialize on load
         window.addEventListener('load', checkAuth);
 
-        // Handle visibility change (pause when tab hidden)
+        // Handle visibility change
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 if (autoRefreshInterval) clearInterval(autoRefreshInterval);

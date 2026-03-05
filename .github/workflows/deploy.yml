@@ -27,44 +27,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Create config.js from secrets
-        run: |
-          cat > config.js << 'EOF'
-          const CONFIG = {
-            DEVICE_TOKENS: ${{ secrets.DEVICE_TOKENS || '[]' }},
-            REMOTE_ACCESS_TOKEN: '${{ secrets.REMOTE_ACCESS_TOKEN }}',
-            LOCAL_NETWORK_RANGES: ['192.168.', '10.', '127.', '::1'],
-            SERVICES: [
-              {
-                name: 'Speech Practice Backend',
-                url: 'https://speech.vileen.pl/api/health',
-                type: 'api'
-              },
-              {
-                name: 'Solana Playground Backend', 
-                url: 'https://solana.vileen.pl/api/health',
-                type: 'api'
-              },
-              {
-                name: 'Speech Practice Frontend',
-                url: 'https://vileen.github.io/speech-practice',
-                type: 'web'
-              },
-              {
-                name: 'Mic Testing',
-                url: 'https://mic-testing-dominik.netlify.app',
-                type: 'web'
-              }
-            ],
-            PING_INTERVAL: 60000,
-            GITHUB_PAGES_URL: 'https://vileen.github.io/status'
-          };
-
-          if (typeof module !== 'undefined' && module.exports) {
-            module.exports = CONFIG;
-          }
-          EOF
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
