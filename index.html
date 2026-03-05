@@ -146,10 +146,14 @@
             right: 0;
             bottom: 0;
             background: rgba(15, 15, 26, 0.98);
-            display: flex;
+            display: none; /* Hidden by default to prevent flash */
             align-items: center;
             justify-content: center;
             z-index: 1000;
+        }
+        
+        .auth-overlay.show {
+            display: flex;
         }
         
         .auth-box {
@@ -213,9 +217,7 @@
             margin-top: 10px;
         }
         
-        .hidden {
-            display: none !important;
-        }
+
         
         .refresh-btn {
             position: fixed;
@@ -319,10 +321,15 @@
         // Check authentication
         function checkAuth() {
             const savedPassword = sessionStorage.getItem('status_password');
+            const overlay = document.getElementById('authOverlay');
+            
             if (savedPassword === CONFIG.PASSWORD) {
                 isAuthenticated = true;
-                document.getElementById('authOverlay').classList.add('hidden');
+                // Overlay stays hidden (no 'show' class)
                 initDashboard();
+            } else {
+                // Show auth overlay only when needed
+                overlay.classList.add('show');
             }
         }
 
@@ -340,7 +347,7 @@
             if (password === CONFIG.PASSWORD) {
                 sessionStorage.setItem('status_password', password);
                 isAuthenticated = true;
-                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('authOverlay').classList.remove('show');
                 errorDiv.classList.add('hidden');
                 initDashboard();
             } else {
