@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -7,8 +9,15 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3456;
 
-// Get password from environment or use default (should be changed!)
-const AUTH_PASSWORD = process.env.STATUS_PASSWORD || 'YOUR-12-CHAR-PASSWORD-HERE';
+// Get password from environment (required!)
+const AUTH_PASSWORD = process.env.STATUS_PASSWORD;
+
+if (!AUTH_PASSWORD || AUTH_PASSWORD === 'YOUR-12-CHAR-PASSWORD-HERE') {
+  console.error('❌ ERROR: STATUS_PASSWORD not set!');
+  console.error('Set it via: export STATUS_PASSWORD=yourpassword');
+  console.error('Or create .env file with STATUS_PASSWORD=yourpassword');
+  process.exit(1);
+}
 
 // Simple session store (in-memory)
 const SESSIONS = new Map();
@@ -104,7 +113,6 @@ app.get('/api/logs/:service', requireAuth, (req, res) => {
   }
   
   const logs = fs.readFileSync(logFile, 'utf-8');
-  // Return last 50 lines
   const lines = logs.split('\n').filter(line => line.trim());
   res.json({ logs: lines.slice(-50).join('\n') });
 });
@@ -153,12 +161,10 @@ async function checkAllServices() {
     
     STATUS_HISTORY.push(entry);
     
-    // Keep only last MAX_HISTORY entries
     if (STATUS_HISTORY.length > MAX_HISTORY) {
       STATUS_HISTORY.shift();
     }
     
-    // If service is down, fetch and save logs
     if (result.status === 'down') {
       console.log(`[ALERT] ${service.name} is DOWN: ${result.error}`);
       await fetchAndSaveLogs(service);
@@ -171,7 +177,6 @@ async function checkAllServices() {
 // Fetch logs from remote service
 async function fetchAndSaveLogs(service) {
   try {
-    // Try to fetch logs from the service itself
     const logUrl = service.url.replace('/api/health', '/api/logs/error');
     const response = await fetch(logUrl, { timeout: 5000 }).catch(() => null);
     
@@ -180,7 +185,7 @@ async function fetchAndSaveLogs(service) {
       const data = await response.json();
       logs = data.logs || 'No logs in response';
     } else {
-      logs = `Failed to fetch logs from ${service.name}\nError: ${response?.statusText || 'Connection failed'}`;
+      logs = `Failed to fetch logs from ${service.name}`;
     }
     
     const logFile = `./logs/${service.name.replace(/\s+/g, '-').toLowerCase()}.log`;
@@ -205,5 +210,5 @@ app.use(express.static('./'));
 app.listen(PORT, () => {
   console.log(`Status backend running on port ${PORT}`);
   console.log(`Checking ${SERVICES.length} services every 60 seconds`);
-  console.log(`Auth enabled: ${AUTH_PASSWORD !== 'YOUR-12-CHAR-PASSWORD-HERE' ? 'YES' : 'NO (using default!)'}`);
+  console.log(`✅ Auth enabled`);
 });
