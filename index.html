@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status Dashboard</title>
+    <title>Service Status Dashboard</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f0f1a;
@@ -18,476 +13,208 @@
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border-radius: 16px;
-            border: 1px solid #2a2a4a;
-        }
-        
-        h1 {
-            color: #7289da;
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #888;
-            font-size: 0.9rem;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; color: #fff; }
+        .status-grid { display: grid; gap: 15px; }
+        .service-card {
             background: #1a1a2e;
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid #2a2a4a;
-            transition: transform 0.2s, border-color 0.2s;
+            border-left: 4px solid #333;
         }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            border-color: #7289da;
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-        
-        .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-dot.online {
-            background: #4ecca3;
-            box-shadow: 0 0 10px #4ecca3;
-        }
-        
-        .status-dot.offline {
-            background: #e94560;
-            box-shadow: 0 0 10px #e94560;
-            animation: none;
-        }
-        
-        .status-dot.pending {
-            background: #ffd700;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .metric {
+        .service-card.up { border-left-color: #4caf50; }
+        .service-card.down { border-left-color: #f44336; }
+        .service-header {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #2a2a4a;
-        }
-        
-        .metric:last-child {
-            border-bottom: none;
-        }
-        
-        .metric-label {
-            color: #888;
-            font-size: 0.85rem;
-        }
-        
-        .metric-value {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: #fff;
-        }
-        
-        .metric-value.good {
-            color: #4ecca3;
-        }
-        
-        .metric-value.warning {
-            color: #ffd700;
-        }
-        
-        .metric-value.bad {
-            color: #e94560;
-        }
-        
-        .auth-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 15, 26, 0.98);
-            display: none; /* Hidden by default to prevent flash */
             align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .auth-overlay.show {
-            display: flex;
-        }
-        
-        .auth-box {
-            background: #1a1a2e;
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid #2a2a4a;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-        
-        .auth-box h2 {
-            color: #7289da;
             margin-bottom: 10px;
         }
-        
-        .auth-box p {
+        .service-name { font-size: 1.2em; font-weight: 600; }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .status-badge.up { background: #4caf50; color: #fff; }
+        .status-badge.down { background: #f44336; color: #fff; }
+        .service-meta {
             color: #888;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
+            font-size: 0.9em;
+            margin-top: 8px;
         }
-        
-        .auth-box input {
-            width: 100%;
-            padding: 12px 16px;
-            background: #0f0f1a;
-            border: 1px solid #2a2a4a;
+        .error-logs {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0d0d15;
             border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            margin-bottom: 15px;
-            text-align: center;
-            letter-spacing: 2px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8em;
+            color: #ff6b6b;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: none;
         }
-        
-        .auth-box input:focus {
-            outline: none;
-            border-color: #7289da;
-        }
-        
-        .auth-box button {
-            width: 100%;
-            padding: 12px 24px;
-            background: #7289da;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .auth-box button:hover {
-            background: #5b73c7;
-        }
-        
-        .error-message {
-            color: #e94560;
-            font-size: 0.85rem;
+        .error-logs.show { display: block; }
+        .toggle-logs {
             margin-top: 10px;
-        }
-        
-
-        
-        .refresh-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #7289da;
+            padding: 8px 16px;
+            background: #333;
             border: none;
+            border-radius: 6px;
             color: #fff;
-            font-size: 1.2rem;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(114, 137, 218, 0.3);
-            transition: transform 0.2s;
+            font-size: 0.85em;
         }
-        
-        .refresh-btn:hover {
-            transform: scale(1.1);
-        }
-        
-        .refresh-btn.spinning {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        footer {
+        .toggle-logs:hover { background: #444; }
+        .last-check {
             text-align: center;
-            padding: 20px;
             color: #666;
-            font-size: 0.8rem;
+            margin-top: 20px;
+            font-size: 0.9em;
         }
-        
-        .last-updated {
-            color: #888;
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
+        .uptime-chart {
+            display: flex;
+            gap: 2px;
+            margin-top: 10px;
+            height: 30px;
+            align-items: flex-end;
+        }
+        .uptime-bar {
+            flex: 1;
+            min-width: 3px;
+            border-radius: 2px;
+        }
+        .uptime-bar.up { background: #4caf50; }
+        .uptime-bar.down { background: #f44336; }
     </style>
 </head>
 <body>
-    <!-- Password Overlay -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-box">
-            <h2>🔒 Status Dashboard</h2>
-            <p>Enter password to access</p>
-            <input type="password" id="passwordInput" placeholder="Enter password">
-            <button onclick="authenticate()">Access</button>
-            <div id="authError" class="error-message hidden"></div>
-        </div>
-    </div>
-
     <div class="container">
-        <header>
-            <h1>📊 Backend Status</h1>
-            <div class="subtitle">Real-time service monitoring</div>
-        </header>
-
-        <div class="grid" id="servicesGrid">
-            <!-- Service cards will be inserted here -->
+        <h1>🔍 Service Status Dashboard</h1>
+        <div id="status-container" class="status-grid">
+            <div class="loading">Loading status...</div>
         </div>
-
-        <footer>
-            <div class="last-updated">Last updated: <span id="lastUpdated">--</span></div>
-            <div>Auto-refresh every 60 seconds</div>
-        </footer>
+        <div id="last-check" class="last-check"></div>
     </div>
-
-    <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()" title="Refresh now">🔄</button>
 
     <script>
-        // CONFIGURATION - Edit these values
-        const CONFIG = {
-            // 12-character password
-            PASSWORD: 'YOUR-12-CHAR-PASSWORD-HERE',
+        // Auto-detect backend URL
+        const BACKEND_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3456' 
+            : '';
+        
+        const STATUS_CONTAINER = document.getElementById('status-container');
+        const LAST_CHECK = document.getElementById('last-check');
+        
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                renderStatus(data);
+            } catch (error) {
+                STATUS_CONTAINER.innerHTML = `<div class="loading">Error loading status: ${error.message}</div>`;
+            }
+        }
+        
+        function renderStatus(data) {
+            if (!data.services || data.services.length === 0) {
+                STATUS_CONTAINER.innerHTML = '<div class="loading">No services configured</div>';
+                return;
+            }
             
-            // Backend services only
-            SERVICES: [
-                {
-                    name: 'Speech Practice API',
-                    url: 'https://speech.vileen.pl/api/health',
-                    type: 'api'
-                },
-                {
-                    name: 'Solana Playground API', 
-                    url: 'https://solana.vileen.pl/api/health',
-                    type: 'api'
+            // Group history by service
+            const historyByService = {};
+            data.history.forEach(entry => {
+                if (!historyByService[entry.service]) {
+                    historyByService[entry.service] = [];
                 }
-            ],
+                historyByService[entry.service].push(entry);
+            });
             
-            // Ping interval (60 seconds)
-            PING_INTERVAL: 60000
-        };
-
-        // State
-        let isAuthenticated = false;
-        let autoRefreshInterval = null;
-
-        // Check authentication
-        function checkAuth() {
-            const savedPassword = sessionStorage.getItem('status_password');
-            const overlay = document.getElementById('authOverlay');
+            // Get latest status for each service
+            const latestStatus = {};
+            data.history.forEach(entry => {
+                latestStatus[entry.service] = entry;
+            });
             
-            if (savedPassword === CONFIG.PASSWORD) {
-                isAuthenticated = true;
-                // Overlay stays hidden (no 'show' class)
-                initDashboard();
-            } else {
-                // Show auth overlay only when needed
-                overlay.classList.add('show');
-            }
-        }
-
-        // Authenticate user
-        function authenticate() {
-            const passwordInput = document.getElementById('passwordInput');
-            const password = passwordInput.value.trim();
-            const errorDiv = document.getElementById('authError');
-            
-            // Debug logging
-            console.log('Entered password:', password);
-            console.log('Expected password:', CONFIG.PASSWORD);
-            console.log('Match:', password === CONFIG.PASSWORD);
-
-            if (password === CONFIG.PASSWORD) {
-                sessionStorage.setItem('status_password', password);
-                isAuthenticated = true;
-                document.getElementById('authOverlay').classList.remove('show');
-                errorDiv.classList.add('hidden');
-                initDashboard();
-            } else {
-                errorDiv.textContent = 'Invalid password (entered: ' + password.length + ' chars)';
-                errorDiv.classList.remove('hidden');
-                passwordInput.value = '';
-            }
-        }
-
-        // Initialize dashboard
-        function initDashboard() {
-            createServiceCards();
-            checkAllServices();
-            startAutoRefresh();
-        }
-
-        // Create service cards
-        function createServiceCards() {
-            const grid = document.getElementById('servicesGrid');
-            grid.innerHTML = '';
-
-            CONFIG.SERVICES.forEach((service, index) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.id = `service-${index}`;
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-title">${service.name}</span>
-                        <div class="status-dot pending" id="status-${index}"></div>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Status</span>
-                        <span class="metric-value" id="status-text-${index}">Checking...</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Response Time</span>
-                        <span class="metric-value" id="response-${index}">-- ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Last Check</span>
-                        <span class="metric-value" id="lastcheck-${index}">--</span>
+            STATUS_CONTAINER.innerHTML = data.services.map(service => {
+                const status = latestStatus[service.name];
+                const serviceHistory = historyByService[service.name] || [];
+                
+                if (!status) {
+                    return `<div class="service-card">
+                        <div class="service-header">
+                            <span class="service-name">${service.name}</span>
+                            <span class="status-badge">Unknown</span>
+                        </div>
+                        <div class="service-meta">No data yet...</div>
+                    </div>`;
+                }
+                
+                const isUp = status.status === 'up';
+                const chartBars = serviceHistory.slice(-30).map(h => 
+                    `<div class="uptime-bar ${h.status}" title="${h.timestamp}"></div>`
+                ).join('');
+                
+                return `
+                    <div class="service-card ${status.status}">
+                        <div class="service-header">
+                            <span class="service-name">${service.name}</span>
+                            <span class="status-badge ${status.status}">${isUp ? '✓ UP' : '✗ DOWN'}</span>
+                        </div>
+                        <div class="service-meta">
+                            Response: ${status.responseTime}ms | 
+                            ${status.statusCode ? `HTTP ${status.statusCode} | ` : ''}
+                            Checked: ${new Date(status.timestamp).toLocaleTimeString()}
+                        </div>
+                        <div class="uptime-chart">${chartBars}</div>
+                        ${!isUp ? `
+                            <button class="toggle-logs" onclick="toggleLogs('${service.name}')">Show Error Logs</button>
+                            <div id="logs-${service.name}" class="error-logs"></div>
+                        ` : ''}
                     </div>
                 `;
-                grid.appendChild(card);
-            });
-        }
-
-        // Ping a service
-        async function pingService(service) {
-            const start = performance.now();
-            try {
-                const response = await fetch(service.url + '?t=' + Date.now(), {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    }
-                });
-                const latency = Math.round(performance.now() - start);
-                return {
-                    online: response.ok,
-                    latency: latency,
-                    timestamp: new Date()
-                };
-            } catch (error) {
-                return {
-                    online: false,
-                    latency: null,
-                    timestamp: new Date(),
-                    error: error.message
-                };
-            }
-        }
-
-        // Check all services
-        async function checkAllServices() {
-            const btn = document.getElementById('refreshBtn');
-            btn.classList.add('spinning');
-
-            CONFIG.SERVICES.forEach(async (service, index) => {
-                const status = await pingService(service);
-                updateServiceCard(index, status);
-            });
-
-            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+            }).join('');
             
-            setTimeout(() => btn.classList.remove('spinning'), 500);
+            if (data.lastCheck) {
+                LAST_CHECK.textContent = `Last backend check: ${new Date(data.lastCheck).toLocaleString()}`;
+            }
         }
-
-        // Update service card
-        function updateServiceCard(index, status) {
-            const dot = document.getElementById(`status-${index}`);
-            const statusText = document.getElementById(`status-text-${index}`);
-            const responseEl = document.getElementById(`response-${index}`);
-            const lastCheckEl = document.getElementById(`lastcheck-${index}`);
-
-            if (status.online) {
-                dot.className = 'status-dot online';
-                statusText.textContent = 'Online';
-                statusText.className = 'metric-value good';
-                responseEl.textContent = status.latency + ' ms';
-                responseEl.className = 'metric-value good';
+        
+        async function toggleLogs(serviceName) {
+            const logsDiv = document.getElementById(`logs-${serviceName}`);
+            if (!logsDiv) return;
+            
+            if (logsDiv.classList.contains('show')) {
+                logsDiv.classList.remove('show');
+                event.target.textContent = 'Show Error Logs';
             } else {
-                dot.className = 'status-dot offline';
-                statusText.textContent = 'Offline';
-                statusText.className = 'metric-value bad';
-                responseEl.textContent = 'Timeout';
-                responseEl.className = 'metric-value bad';
+                logsDiv.classList.add('show');
+                event.target.textContent = 'Hide Error Logs';
+                
+                try {
+                    const response = await fetch(`/api/logs/${serviceName}`);
+                    const data = await response.json();
+                    logsDiv.textContent = data.logs || 'No logs available';
+                } catch (error) {
+                    logsDiv.textContent = `Failed to fetch logs: ${error.message}`;
+                }
             }
-
-            lastCheckEl.textContent = status.timestamp.toLocaleTimeString();
         }
-
-        // Start auto-refresh
-        function startAutoRefresh() {
-            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-            autoRefreshInterval = setInterval(checkAllServices, CONFIG.PING_INTERVAL);
-        }
-
-        // Manual refresh
-        function manualRefresh() {
-            checkAllServices();
-        }
-
-        // Handle Enter key
-        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') authenticate();
-        });
-
-        // Initialize on load
-        window.addEventListener('load', checkAuth);
-
-        // Handle visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-            } else if (isAuthenticated) {
-                startAutoRefresh();
-                checkAllServices();
-            }
-        });
+        
+        // Initial load
+        fetchStatus();
+        
+        // Refresh every 30 seconds
+        setInterval(fetchStatus, 30000);
     </script>
 </body>
 </html>
