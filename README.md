@@ -9,13 +9,11 @@ Simple status page for backend services.
 - 📱 Mobile-friendly design
 - 📡 GitHub Pages hosted
 
-## Password
+## Setup
 
-Default password: `status2024dash`
-
-**To change password:** Edit `index.html` line 14:
+**Set your own password:** Edit `index.html` line 14:
 ```javascript
-PASSWORD: 'your-new-password'
+PASSWORD: 'your-12-char-password'
 ```
 
 ## Services Monitored
