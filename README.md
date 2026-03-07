@@ -1,71 +1,85 @@
 # Status Dashboard
 
-Continuous monitoring dashboard for backend services.
+Continuous monitoring dashboard with backend authentication.
 
 ## Architecture
 
-- **Backend** (Node.js + Express): Checks services every 60s, stores history, serves API
-- **Frontend** (Static HTML): Displays status from backend API, refreshes every 30s
+- **Backend** (Node.js + Express): 
+  - Checks services every 60s
+  - Stores history in memory
+  - Handles authentication (sessions)
+  - Serves API endpoints
+- **Frontend** (Static HTML): 
+  - Login form → gets token from backend
+  - Displays status from backend API
+  - No password in frontend code!
+
+## Security
+
+✅ **Password is stored ONLY on backend** (via `STATUS_PASSWORD` env var)
+✅ **Frontend gets session token** after successful login
+✅ **All API endpoints require authentication**
+✅ **Sessions expire after 24 hours**
+
+## Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Set password (required!)
+export STATUS_PASSWORD="your-secure-password-here"
+
+# Start backend
+node server.js
+
+# Open http://localhost:3456
+```
 
 ## Services Monitored
 
 - Speech Practice API (speech.vileen.pl)
 - Solana Playground API (solana.vileen.pl)
 
-## Quick Start
+## API Endpoints
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `POST /api/auth/login` | No | Login with password, get token |
+| `GET /api/auth/check` | Yes | Check if session is valid |
+| `POST /api/auth/logout` | Yes | Logout, invalidate token |
+| `GET /api/status` | Yes | Get current status + history |
+| `GET /api/logs/:service` | Yes | Get error logs for service |
+
+## Frontend Flow
+
+1. User sees login form
+2. Frontend sends password to `POST /api/auth/login`
+3. Backend validates, returns session token
+4. Frontend stores token in localStorage
+5. Frontend uses token for all API requests
+6. Token expires after 24h or on logout
+
+## Environment Variables
 
 ```bash
-# Install dependencies
-npm install
-
-# Start backend
-node server.js
-
-# Open frontend
-open index.html
-# or serve with any static server
+STATUS_PASSWORD="your-secure-password"  # Required!
+PORT=3456                               # Optional, default 3456
 ```
-
-## Backend Features
-
-- ✅ Checks health every 60 seconds
-- ✅ Stores last 1000 status checks in memory
-- ✅ Saves error logs when services crash
-- ✅ API endpoints:
-  - `GET /api/status` - current status + history
-  - `GET /api/logs/:service` - error logs
-
-## Frontend Features
-
-- ✅ Real-time status display
-- ✅ Uptime chart (last 30 checks)
-- ✅ Error log viewer (when service is down)
-- ✅ Auto-refresh every 30 seconds
 
 ## Deployment
 
-### Backend (needs persistent server):
+### Backend (persistent server):
 ```bash
-# Using PM2
-npm install -g pm2
-pm2 start server.js --name status-backend
-pm2 save
-pm2 startup
+# Using systemd or PM2
+export STATUS_PASSWORD="your-password"
+node server.js
 ```
 
-### Frontend (GitHub Pages):
-Frontend is pure HTML/JS - can be hosted on GitHub Pages.
-Update `BACKEND_URL` in index.html to point to your backend.
+### Frontend:
+Can be served by the backend (static files) or hosted separately (GitHub Pages).
 
 ## Logs
 
-Error logs are saved to `./logs/` when services go down:
-- `logs/speech-practice.log`
-- `logs/solana-playground.log`
-
-## Password Protection
-
-Edit `index.html` line ~10:
-```javascript
-PASSWORD: 'your-12-char-password'
-```
+- Backend logs: console output
+- Service error logs: `./logs/*.log`

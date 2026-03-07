@@ -15,6 +15,42 @@
         }
         .container { max-width: 800px; margin: 0 auto; }
         h1 { text-align: center; margin-bottom: 30px; color: #fff; }
+        
+        /* Login form */
+        .login-form {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .login-form h2 { margin-bottom: 20px; }
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #0f0f1a;
+            color: #fff;
+            font-size: 16px;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background: #4caf50;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .login-form button:hover { background: #45a049; }
+        .login-error { color: #f44336; margin-top: 10px; }
+        
+        /* Status grid */
         .status-grid { display: grid; gap: 15px; }
         .service-card {
             background: #1a1a2e;
@@ -75,6 +111,15 @@
             margin-top: 20px;
             font-size: 0.9em;
         }
+        .logout-btn {
+            float: right;
+            padding: 8px 16px;
+            background: #333;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+        }
         .loading {
             text-align: center;
             padding: 40px;
@@ -98,35 +143,146 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Service Status Dashboard</h1>
-        <div id="status-container" class="status-grid">
-            <div class="loading">Loading status...</div>
+        <div id="app">
+            <!-- Content will be rendered by JS -->
         </div>
-        <div id="last-check" class="last-check"></div>
     </div>
 
     <script>
-        // Auto-detect backend URL
-        const BACKEND_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3456' 
-            : '';
+        const API_BASE = ''; // Same origin
+        let authToken = localStorage.getItem('status_token');
         
-        const STATUS_CONTAINER = document.getElementById('status-container');
-        const LAST_CHECK = document.getElementById('last-check');
+        const app = document.getElementById('app');
         
-        async function fetchStatus() {
+        // Check if logged in
+        async function checkAuth() {
+            if (!authToken) {
+                renderLogin();
+                return;
+            }
+            
             try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                renderStatus(data);
+                const response = await fetch(`${API_BASE}/api/auth/check`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    renderDashboard();
+                    fetchStatus();
+                } else {
+                    localStorage.removeItem('status_token');
+                    authToken = null;
+                    renderLogin();
+                }
             } catch (error) {
-                STATUS_CONTAINER.innerHTML = `<div class="loading">Error loading status: ${error.message}</div>`;
+                renderLogin('Connection error. Please try again.');
             }
         }
         
+        // Render login form
+        function renderLogin(error = '') {
+            app.innerHTML = `
+                <div class="login-form">
+                    <h2>🔐 Status Dashboard</h2>
+                    <input type="password" id="password" placeholder="Enter password" autofocus>
+                    <button onclick="handleLogin()">Login</button>
+                    ${error ? `<div class="login-error">${error}</div>` : ''}
+                </div>
+            `;
+            
+            // Handle Enter key
+            document.getElementById('password')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+        }
+        
+        // Handle login
+        async function handleLogin() {
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('status_token', authToken);
+                    renderDashboard();
+                    fetchStatus();
+                } else {
+                    renderLogin(data.error || 'Invalid password');
+                }
+            } catch (error) {
+                renderLogin('Connection error. Please try again.');
+            }
+        }
+        
+        // Logout
+        async function handleLogout() {
+            if (authToken) {
+                await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+            }
+            localStorage.removeItem('status_token');
+            authToken = null;
+            renderLogin();
+        }
+        
+        // Render dashboard
+        function renderDashboard() {
+            app.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h1>🔍 Service Status</h1>
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                </div>
+                <div id="status-container" class="status-grid">
+                    <div class="loading">Loading status...</div>
+                </div>
+                <div id="last-check" class="last-check"></div>
+            `;
+        }
+        
+        // Fetch status from backend
+        async function fetchStatus() {
+            const container = document.getElementById('status-container');
+            const lastCheck = document.getElementById('last-check');
+            
+            if (!container) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        handleLogout();
+                        return;
+                    }
+                    throw new Error('Failed to fetch status');
+                }
+                
+                const data = await response.json();
+                renderStatus(data);
+            } catch (error) {
+                container.innerHTML = `<div class="loading">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Render status
         function renderStatus(data) {
+            const container = document.getElementById('status-container');
+            const lastCheck = document.getElementById('last-check');
+            
             if (!data.services || data.services.length === 0) {
-                STATUS_CONTAINER.innerHTML = '<div class="loading">No services configured</div>';
+                container.innerHTML = '<div class="loading">No services configured</div>';
                 return;
             }
             
@@ -145,7 +301,7 @@
                 latestStatus[entry.service] = entry;
             });
             
-            STATUS_CONTAINER.innerHTML = data.services.map(service => {
+            container.innerHTML = data.services.map(service => {
                 const status = latestStatus[service.name];
                 const serviceHistory = historyByService[service.name] || [];
                 
@@ -184,11 +340,12 @@
                 `;
             }).join('');
             
-            if (data.lastCheck) {
-                LAST_CHECK.textContent = `Last backend check: ${new Date(data.lastCheck).toLocaleString()}`;
+            if (data.lastCheck && lastCheck) {
+                lastCheck.textContent = `Last backend check: ${new Date(data.lastCheck).toLocaleString()}`;
             }
         }
         
+        // Toggle logs
         async function toggleLogs(serviceName) {
             const logsDiv = document.getElementById(`logs-${serviceName}`);
             if (!logsDiv) return;
@@ -201,7 +358,12 @@
                 event.target.textContent = 'Hide Error Logs';
                 
                 try {
-                    const response = await fetch(`/api/logs/${serviceName}`);
+                    const response = await fetch(`${API_BASE}/api/logs/${serviceName}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to fetch logs');
+                    
                     const data = await response.json();
                     logsDiv.textContent = data.logs || 'No logs available';
                 } catch (error) {
@@ -210,11 +372,15 @@
             }
         }
         
-        // Initial load
-        fetchStatus();
+        // Initial check
+        checkAuth();
         
-        // Refresh every 30 seconds
-        setInterval(fetchStatus, 30000);
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (authToken && document.getElementById('status-container')) {
+                fetchStatus();
+            }
+        }, 30000);
     </script>
 </body>
 </html>

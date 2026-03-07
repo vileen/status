@@ -2,9 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
+
+// Get password from environment or use default (should be changed!)
+const AUTH_PASSWORD = process.env.STATUS_PASSWORD || 'YOUR-12-CHAR-PASSWORD-HERE';
+
+// Simple session store (in-memory)
+const SESSIONS = new Map();
+const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
 // Services to monitor
 const SERVICES = [
@@ -23,16 +31,62 @@ if (!fs.existsSync('./logs')) {
 
 // CORS for GitHub Pages
 app.use(cors({
-  origin: ['https://vileen.github.io', 'http://localhost:3456']
+  origin: ['https://vileen.github.io', 'http://localhost:3456', 'http://localhost:5173'],
+  credentials: true
 }));
 
 app.use(express.json());
 
-// Serve frontend
-app.use(express.static('./'));
+// Authentication middleware
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+  
+  if (!token || !SESSIONS.has(token)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const session = SESSIONS.get(token);
+  if (Date.now() - session.createdAt > SESSION_TIMEOUT) {
+    SESSIONS.delete(token);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+  
+  req.session = session;
+  next();
+}
 
-// Get current status
-app.get('/api/status', (req, res) => {
+// Login endpoint
+app.post('/api/auth/login', (req, res) => {
+  const { password } = req.body;
+  
+  if (password !== AUTH_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid password' });
+  }
+  
+  // Generate session token
+  const token = crypto.randomUUID();
+  SESSIONS.set(token, {
+    token,
+    createdAt: Date.now()
+  });
+  
+  res.json({ token });
+});
+
+// Check auth status
+app.get('/api/auth/check', requireAuth, (req, res) => {
+  res.json({ authenticated: true });
+});
+
+// Logout
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  SESSIONS.delete(token);
+  res.json({ message: 'Logged out' });
+});
+
+// Get current status (protected)
+app.get('/api/status', requireAuth, (req, res) => {
   res.json({
     services: SERVICES,
     history: STATUS_HISTORY.slice(-100),
@@ -40,8 +94,8 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Get latest error logs for a service
-app.get('/api/logs/:service', (req, res) => {
+// Get latest error logs for a service (protected)
+app.get('/api/logs/:service', requireAuth, (req, res) => {
   const serviceName = req.params.service;
   const logFile = `./logs/${serviceName}.log`;
   
@@ -145,7 +199,11 @@ checkAllServices();
 // Check every 60 seconds
 setInterval(checkAllServices, 60000);
 
+// Serve frontend (public)
+app.use(express.static('./'));
+
 app.listen(PORT, () => {
   console.log(`Status backend running on port ${PORT}`);
   console.log(`Checking ${SERVICES.length} services every 60 seconds`);
+  console.log(`Auth enabled: ${AUTH_PASSWORD !== 'YOUR-12-CHAR-PASSWORD-HERE' ? 'YES' : 'NO (using default!)'}`);
 });
