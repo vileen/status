@@ -99,6 +99,11 @@ app.get('/api/status', requireAuth, (req, res) => {
   });
 });
 
+// Health endpoint (must be before static files)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'status-dashboard-api' });
+});
+
 // Get logs - reads directly from file (works even if service is down!)
 app.get('/api/logs/:service', requireAuth, (req, res) => {
   const serviceName = req.params.service;
@@ -189,9 +194,8 @@ async function checkAllServices() {
 checkAllServices();
 setInterval(checkAllServices, 60000);
 
-// Serve frontend
+// Serve frontend (after API routes)
 app.use(express.static('./'));
-
 app.listen(PORT, () => {
   console.log(`Status backend running on port ${PORT}`);
   console.log(`✅ Auth enabled`);

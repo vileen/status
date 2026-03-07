@@ -16,7 +16,6 @@
         .container { max-width: 800px; margin: 0 auto; }
         h1 { text-align: center; margin-bottom: 30px; color: #fff; }
         
-        /* Login form */
         .login-form {
             max-width: 400px;
             margin: 100px auto;
@@ -50,7 +49,6 @@
         .login-form button:hover { background: #45a049; }
         .login-error { color: #f44336; margin-top: 10px; }
         
-        /* Status grid */
         .status-grid { display: grid; gap: 15px; }
         .service-card {
             background: #1a1a2e;
@@ -143,18 +141,16 @@
 </head>
 <body>
     <div class="container">
-        <div id="app">
-            <!-- Content will be rendered by JS -->
-        </div>
+        <div id="app"></div>
     </div>
 
     <script>
-        const API_BASE = ''; // Same origin
-        let authToken = localStorage.getItem('status_token');
+        // API URL - points to Cloudflare tunnel
+        const API_BASE = 'https://status-api.vileen.pl';
         
+        let authToken = localStorage.getItem('status_token');
         const app = document.getElementById('app');
         
-        // Check if logged in
         async function checkAuth() {
             if (!authToken) {
                 renderLogin();
@@ -179,7 +175,6 @@
             }
         }
         
-        // Render login form
         function renderLogin(error = '') {
             app.innerHTML = `
                 <div class="login-form">
@@ -190,13 +185,11 @@
                 </div>
             `;
             
-            // Handle Enter key
             document.getElementById('password')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleLogin();
             });
         }
         
-        // Handle login
         async function handleLogin() {
             const password = document.getElementById('password').value;
             
@@ -222,7 +215,6 @@
             }
         }
         
-        // Logout
         async function handleLogout() {
             if (authToken) {
                 await fetch(`${API_BASE}/api/auth/logout`, {
@@ -235,7 +227,6 @@
             renderLogin();
         }
         
-        // Render dashboard
         function renderDashboard() {
             app.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -249,11 +240,8 @@
             `;
         }
         
-        // Fetch status from backend
         async function fetchStatus() {
             const container = document.getElementById('status-container');
-            const lastCheck = document.getElementById('last-check');
-            
             if (!container) return;
             
             try {
@@ -276,7 +264,6 @@
             }
         }
         
-        // Render status
         function renderStatus(data) {
             const container = document.getElementById('status-container');
             const lastCheck = document.getElementById('last-check');
@@ -286,7 +273,6 @@
                 return;
             }
             
-            // Group history by service
             const historyByService = {};
             data.history.forEach(entry => {
                 if (!historyByService[entry.service]) {
@@ -295,7 +281,6 @@
                 historyByService[entry.service].push(entry);
             });
             
-            // Get latest status for each service
             const latestStatus = {};
             data.history.forEach(entry => {
                 latestStatus[entry.service] = entry;
@@ -345,7 +330,6 @@
             }
         }
         
-        // Toggle logs
         async function toggleLogs(serviceName) {
             const logsDiv = document.getElementById(`logs-${serviceName}`);
             if (!logsDiv) return;
@@ -358,7 +342,7 @@
                 event.target.textContent = 'Hide Error Logs';
                 
                 try {
-                    const response = await fetch(`${API_BASE}/api/logs/${serviceName}`, {
+                    const response = await fetch(`${API_BASE}/api/logs/${encodeURIComponent(serviceName)}`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     
@@ -372,10 +356,8 @@
             }
         }
         
-        // Initial check
         checkAuth();
         
-        // Auto-refresh every 30 seconds
         setInterval(() => {
             if (authToken && document.getElementById('status-container')) {
                 fetchStatus();
