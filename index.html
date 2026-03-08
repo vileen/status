@@ -306,7 +306,7 @@
             // latestStatus now comes from API
             
             container.innerHTML = data.services.map(service => {
-                const status = latestStatus[service.name];
+                const status = data.latestStatus[service.name];
                 const serviceHistory = historyByService[service.name] || [];
                 
                 if (!status) {
