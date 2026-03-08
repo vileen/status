@@ -39,6 +39,9 @@ const SERVICES = [
 const STATUS_HISTORY = [];
 const MAX_HISTORY = 1000;
 
+// Track when services went down
+const DOWN_SINCE = new Map(); // serviceName -> timestamp
+
 // Ensure logs directory exists
 if (!fs.existsSync('./logs')) {
   fs.mkdirSync('./logs', { recursive: true });
@@ -112,8 +115,20 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 
 // Get status
 app.get('/api/status', requireAuth, (req, res) => {
+  // Get latest status for each service
+  const latestStatus = {};
+  for (const service of SERVICES) {
+    const history = STATUS_HISTORY.filter(h => h.service === service.name);
+    const last = history[history.length - 1];
+    latestStatus[service.name] = {
+      ...last,
+      downSince: DOWN_SINCE.get(service.name) || null
+    };
+  }
+  
   res.json({
     services: SERVICES.map(s => ({ name: s.name, url: s.url })),
+    latestStatus,
     history: STATUS_HISTORY.slice(-100),
     lastCheck: STATUS_HISTORY.length > 0 ? STATUS_HISTORY[STATUS_HISTORY.length - 1].timestamp : null
   });
@@ -199,12 +214,26 @@ async function checkAllServices() {
     const result = await checkService(service);
     const entry = { service: service.name, ...result };
     
+    // Track when service went down
+    if (result.status === 'down') {
+      if (!DOWN_SINCE.has(service.name)) {
+        DOWN_SINCE.set(service.name, result.timestamp);
+        console.log(`[ALERT] ${service.name} is DOWN since ${result.timestamp}`);
+      }
+      entry.downSince = DOWN_SINCE.get(service.name);
+    } else {
+      // Service is up, clear down tracking
+      if (DOWN_SINCE.has(service.name)) {
+        const downTime = DOWN_SINCE.get(service.name);
+        const upTime = new Date(result.timestamp);
+        const duration = Math.round((upTime - new Date(downTime)) / 1000);
+        console.log(`[RECOVERED] ${service.name} is UP after ${duration}s downtime`);
+        DOWN_SINCE.delete(service.name);
+      }
+    }
+    
     STATUS_HISTORY.push(entry);
     if (STATUS_HISTORY.length > MAX_HISTORY) STATUS_HISTORY.shift();
-    
-    if (result.status === 'down') {
-      console.log(`[ALERT] ${service.name} is DOWN`);
-    }
   }
   
   console.log(`[${new Date().toISOString()}] Check complete`);

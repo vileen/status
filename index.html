@@ -49,6 +49,27 @@
         .login-form button:hover { background: #45a049; }
         .login-error { color: #f44336; margin-top: 10px; }
         
+        .quote-container {
+            max-width: 400px;
+            margin: 30px auto;
+            padding: 20px;
+            text-align: center;
+            border-left: 3px solid #4caf50;
+            background: rgba(76, 175, 80, 0.05);
+            border-radius: 0 8px 8px 0;
+        }
+        .quote-text {
+            font-style: italic;
+            font-size: 16px;
+            color: #b0b0b0;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .quote-author {
+            font-size: 13px;
+            color: #666;
+        }
+        
         .status-grid { display: grid; gap: 15px; }
         .service-card {
             background: #1a1a2e;
@@ -281,10 +302,8 @@
                 historyByService[entry.service].push(entry);
             });
             
-            const latestStatus = {};
-            data.history.forEach(entry => {
-                latestStatus[entry.service] = entry;
-            });
+            // Use latestStatus from API (includes downSince)
+            // latestStatus now comes from API
             
             container.innerHTML = data.services.map(service => {
                 const status = latestStatus[service.name];
@@ -318,6 +337,7 @@
                         </div>
                         <div class="uptime-chart">${chartBars}</div>
                         ${!isUp ? `
+                            ${status.downSince ? `<div style="color: #ff6b6b; font-size: 12px; margin: 8px 0;">Down since: ${new Date(status.downSince).toLocaleString()}</div>` : ''}
                             <button class="toggle-logs" onclick="toggleLogs('${service.name}')">Show Error Logs</button>
                             <div id="logs-${service.name}" class="error-logs"></div>
                         ` : ''}
