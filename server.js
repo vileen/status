@@ -32,6 +32,11 @@ const SERVICES = [
     name: 'Solana Playground', 
     url: 'https://solana.vileen.pl/api/health',
     logFile: '/Users/dominiksoczewka/Projects/solana-playground/logs/error.log'
+  },
+  { 
+    name: 'Bank to YNAB', 
+    url: 'https://ynab.vileen.pl/api/health',
+    logFile: '/Users/dominiksoczewka/Projects/bank-to-ynab/backend/logs/error.log'
   }
 ];
 
