@@ -23,20 +23,25 @@ const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
 
 // Services configuration with log file paths
 const SERVICES = [
-  { 
-    name: 'Speech Practice', 
+  {
+    name: 'Speech Practice',
     url: 'https://speech.vileen.pl/api/health',
     logFile: '/Users/dominiksoczewka/Projects/speech-practice/backend/logs/errors.log'
   },
-  { 
-    name: 'Solana Playground', 
+  {
+    name: 'Solana Playground',
     url: 'https://solana.vileen.pl/api/health',
     logFile: '/Users/dominiksoczewka/Projects/solana-playground/logs/error.log'
   },
-  { 
-    name: 'Bank to YNAB', 
+  {
+    name: 'Bank to YNAB',
     url: 'https://ynab.vileen.pl/api/health',
     logFile: '/Users/dominiksoczewka/Projects/bank-to-ynab/backend/logs/error.log'
+  },
+  {
+    name: 'PDF OCR',
+    url: 'https://pdf.vileen.pl/api/health',
+    logFile: '/Users/dominiksoczewka/Projects/pdf-ocr/logs/error.log'
   }
 ];
 
