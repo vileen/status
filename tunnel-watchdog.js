@@ -47,6 +47,12 @@ const TUNNELS = [
     type: 'launchagent',
     plist: 'com.cloudflared.solana-playground',
     localFallback: 'http://localhost:3002/api/health'
+  {
+    name: 'solana-wallet-tracker',
+    url: 'https://solana-tracker.vileen.pl/health',
+    type: 'launchagent',
+    plist: 'com.cloudflared.solana-wallet-tracker',
+    localFallback: 'http://localhost:3004/health'
   }
 ];
 
